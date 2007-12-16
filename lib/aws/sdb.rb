@@ -1,0 +1,2 @@
+require 'aws/sdb/error'
+
