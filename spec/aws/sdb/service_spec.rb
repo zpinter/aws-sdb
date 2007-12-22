@@ -9,54 +9,6 @@ require 'uuidtools'
 
 include AWS::SDB
 
-module AWS
-  module SDB
-    module ServiceSpec
-
-      def stub_success
-        resp = mock(Net::HTTPResponse)
-        resp.stub!(:code).and_return("200")
-        resp.stub!(:body).and_return(
-          """
-          <CreateDomainResponse>
-            <ResponseStatus>
-              <StatusCode>Success</StatusCode>
-              <RequestID>#{UUID.random_create.to_s}</RequestID>
-              <BoxUsage>0.001</BoxUsage>
-            </ResponseStatus>
-          </CreateDomainResponse>
-          """
-        )
-        http = mock(Net::HTTP)
-        http.stub!(:send_request).and_return(resp)
-        Net::HTTP.stub!(:new).and_return(http)
-      end
-   
-      def stub_error(code, type, message)
-        resp = mock(Net::HTTPResponse)
-        resp.stub!(:code).and_return(code)
-        resp.stub!(:body).and_return(
-          """
-          <Response>
-            <Errors>
-              <Error>
-                <Code>#{type}</Code>
-                <Message>#{message}</Message>
-              </Error>
-            </Errors>
-            <RequestID>#{UUID.random_create.to_s}</RequestID>
-          </Response>
-          """
-        )
-        http = mock(Net::HTTP)
-        http.stub!(:send_request).and_return(resp)
-        Net::HTTP.stub!(:new).and_return(http)
-      end
-
-    end
-  end
-end
-
 describe Service, "when initialized" do
   it "should by default require environment variables " +
     "AMAZON_ACCESS_KEY_ID & AMAZON_SECRET_ACCESS_KEY" do
@@ -89,8 +41,6 @@ describe Service, "when initialized" do
 end
 
 describe Service, "when creating a new domain" do
-  include ServiceSpec
-  
   before(:all) do
     ENV.stub!(:[]).with('AMAZON_ACCESS_KEY_ID').and_return("X")
     ENV.stub!(:[]).with('AMAZON_SECRET_ACCESS_KEY').and_return("X")
@@ -99,6 +49,46 @@ describe Service, "when creating a new domain" do
     # @service.list_domains.each do |d|
     #   @service.delete_domain(d)
     # end
+  end
+  
+  def stub_success
+    resp = mock(Net::HTTPResponse)
+    resp.stub!(:code).and_return("200")
+    resp.stub!(:body).and_return(
+      """
+      <CreateDomainResponse>
+        <ResponseStatus>
+          <StatusCode>Success</StatusCode>
+          <RequestID>#{UUID.random_create.to_s}</RequestID>
+          <BoxUsage>0.001</BoxUsage>
+        </ResponseStatus>
+      </CreateDomainResponse>
+      """
+    )
+    http = mock(Net::HTTP)
+    http.stub!(:send_request).and_return(resp)
+    Net::HTTP.stub!(:new).and_return(http)
+  end
+
+  def stub_error(code, type, message)
+    resp = mock(Net::HTTPResponse)
+    resp.stub!(:code).and_return(code)
+    resp.stub!(:body).and_return(
+      """
+      <Response>
+        <Errors>
+          <Error>
+            <Code>#{type}</Code>
+            <Message>#{message}</Message>
+          </Error>
+        </Errors>
+        <RequestID>#{UUID.random_create.to_s}</RequestID>
+      </Response>
+      """
+    )
+    http = mock(Net::HTTP)
+    http.stub!(:send_request).and_return(resp)
+    Net::HTTP.stub!(:new).and_return(http)
   end
   
   it "should not raise an stub_error if a valid new domain name is given" do
