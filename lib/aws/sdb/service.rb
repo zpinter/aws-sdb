@@ -157,7 +157,6 @@ module AWS
         raise(ConnectionError.new(response)) unless 
           (200..400).include?(response.code.to_i)
         doc = REXML::Document.new(response.body)
-        p doc.to_s
         error = doc.get_elements('*/Errors/Error')[0]
         raise(
           Module.class_eval(

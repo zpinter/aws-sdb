@@ -13,7 +13,7 @@ module AWS
   module SDB
     module ServiceSpec
 
-      def success(message)
+      def stub_success
         resp = mock(Net::HTTPResponse)
         resp.stub!(:code).and_return("200")
         resp.stub!(:body).and_return(
@@ -22,7 +22,7 @@ module AWS
             <ResponseStatus>
               <StatusCode>Success</StatusCode>
               <RequestID>#{UUID.random_create.to_s}</RequestID>
-              <BoxUsage>0.001<BoxUsage>
+              <BoxUsage>0.001</BoxUsage>
             </ResponseStatus>
           </CreateDomainResponse>
           """
@@ -32,7 +32,7 @@ module AWS
         Net::HTTP.stub!(:new).and_return(http)
       end
    
-      def error(code, type, message)
+      def stub_error(code, type, message)
         resp = mock(Net::HTTPResponse)
         resp.stub!(:code).and_return(code)
         resp.stub!(:body).and_return(
@@ -88,31 +88,28 @@ describe Service, "when initialized" do
   end
 end
 
-describe Service, "when creating domains" do
+describe Service, "when creating a new domain" do
   include ServiceSpec
   
   before(:all) do
-    
-    # TODO Refoctor spec so people can use their own accounts
-   
-    #    ENV.stub!(:[]).with('AMAZON_ACCESS_KEY_ID').and_return("X")
-    #    ENV.stub!(:[]).with('AMAZON_SECRET_ACCESS_KEY').and_return("X")
+    ENV.stub!(:[]).with('AMAZON_ACCESS_KEY_ID').and_return("X")
+    ENV.stub!(:[]).with('AMAZON_SECRET_ACCESS_KEY').and_return("X")
 
     @service = Service.new
-    @service.list_domains[:domains].each do |d|
-      @service.delete_domain(d)
-    end
+    # @service.list_domains.each do |d|
+    #   @service.delete_domain(d)
+    # end
   end
   
-  it "should not raise an error if a valid new domain name is given" do
-    # success
+  it "should not raise an stub_error if a valid new domain name is given" do
+    stub_success
     lambda {
       @service.create_domain("test-#{UUID.random_create.to_s}")
     }.should_not raise_error
   end
   
-  it "should not raise an error if the domain name already exists" do
-    # success
+  it "should not raise an stub_error if the domain name already exists" do
+    stub_success
     domain = "test-#{UUID.random_create.to_s}"
     lambda {
       @service.create_domain(domain)
@@ -120,102 +117,135 @@ describe Service, "when creating domains" do
     }.should_not raise_error
   end
   
-  # TODO Break these specs up more atomicly
-
-  it "should raise an error if an a nil or '' domain name is given" do
-    # error(400, InvalidDomainName, "The domain name '' is not valid.")
+  it "should raise an stub_error if an a nil or '' domain name is given" do
+    stub_error(400, :InvalidDomainName, "The domain name '' is not valid.")
     lambda { 
       @service.create_domain('') 
     }.should raise_error(InvalidDomainName)
-    # error(400, InvalidDomainName, "The domain name '     ' is not valid.")
+    stub_error(400, :InvalidDomainName, "The domain name '     ' is not valid.")
     lambda { 
       @service.create_domain('     ')
     }.should raise_error(InvalidDomainName)
-    # error(400, InvalidDomainName, "The domain name '' is not valid.")
+    stub_error(400, :InvalidDomainName, "The domain name '' is not valid.")
     lambda { 
       @service.create_domain(nil)
     }.should raise_error(InvalidDomainName)
   end
 
-  it "should raise an error if the domain name length is < 3 or > 255" do
-    # error(400, InvalidDomainName, "The domain name 'xx' is not valid.")
+  it "should raise an stub_error if the domain name length is < 3 or > 255" do
+    stub_error(400, :InvalidDomainName, "The domain name 'xx' is not valid.")
     lambda { 
       @service.create_domain('xx')
     }.should raise_error(InvalidDomainName)
-    # error(400, InvalidDomainName, "The domain name '#{:x.to_s*256} is not valid.")
+    stub_error(400, :InvalidDomainName, "The domain name '#{:x.to_s*256}' is not valid.")
     lambda { 
       @service.create_domain('x'*256)
     }.should raise_error(InvalidDomainName)
   end
 
   it "should only accept domain names with a-z, A-Z, 0-9, '_', '-', and '.' " do
+    stub_error(400, :InvalidDomainName, "The domain name '@$^*()' is not valid.")
+    lambda { 
+      @service.create_domain('@$^&*()')
+    }.should raise_error(InvalidDomainName)
   end
 
   it "should only accept a maximum of 100 domain names" do
+    # FIXME Needs implementing
   end
 
   it "should not have to call amazon to determine domain name correctness" do
+    # FIXME Needs implementing
   end
 end
 
-#describe Service, "when creating domains" do
-#  before(:all) do
-#    ENV.stub!(:[]).with('AMAZON_ACCESS_KEY_ID').and_return("X")
-#    ENV.stub!(:[]).with('AMAZON_SECRET_ACCESS_KEY').and_return("X")
-#    @service = Service.new
-#    @domain = "test-#{UUID.random_create.to_s}"
-#  end
-#
-#  it "should ..." do
-#    resp = mock("Net::HTTPResponse")
-#    resp.stub!(:code).and_return("200")
-#    resp.stub!(:body).and_return(
-#      """
-#      <ListDomainsResponse xmlns='http://sdb.amazonaws.com/doc/2007-02-09/'>
-#        <ResponseStatus>
-#          <StatusCode>Success</StatusCode>
-#          <RequestID>f022671f-02a1-4c40-bc35-c71f1b3028f4</RequestID>
-#          <BoxUsage/>
-#        </ResponseStatus>
-#        <DomainName>example</DomainName>
-#      </ListDomainsResponse>
-#      """
-#    )
-#    http = mock("Net:HTTP")
-#    http.stub!(:send_request).and_return(resp)
-#    Net::HTTP.stub!(:new).and_return(http)
+describe Service, "when listing existing domains" do
+  before do
+    # ENV.stub!(:[]).with('AMAZON_ACCESS_KEY_ID').and_return("X")
+    # ENV.stub!(:[]).with('AMAZON_SECRET_ACCESS_KEY').and_return("X")
+
+    @service = Service.new
+    @domain = "test-#{UUID.random_create.to_s}"
+    @service.create_domain(@domain)
+  end
+
+  after do
+    @service.delete_domain(@domain)
+  end
+
+  it "should return a complete list" do
+    resp = mock(Net::HTTPResponse)
+    resp.stub!(:code).and_return("200")
+    resp.stub!(:body).and_return(
+      """
+      <ListDomainsResponse>
+        <ResponseStatus>
+          <StatusCode>Success</StatusCode>
+          <RequestID>#{UUID.random_create.to_s}</RequestID>
+          <BoxUsage/>
+        </ResponseStatus>
+          <DomainName>example1</DomainName>
+          <DomainName>example2</DomainName>
+          <DomainName>example3</DomainName>
+          <DomainName>#{@domain}</DomainName>
+      </ListDomainsResponse>
+      """
+    )
+    http = mock(Net::HTTP)
+    http.stub!(:send_request).and_return(resp)
+    Net::HTTP.stub!(:new).and_return(http)
     
-#    result = nil
-#    lambda { result = @service.list_domains }.should_not raise_error    
-#    result.should_not be_nil
-#    result.should_not be_empty
-#    result.has_key?(:domains).should == true
-#    result[:domains].should_not be_nil
-#    result[:domains].include?(@domain).should == true
-#  end
-#  
-#  it "should be able to delete domains" do
-#    resp = mock("Net::HTTPResponse")
-#    resp.stub!(:code).and_return("200")
-#    resp.stub!(:body).and_return(
-#      """
-#      <DeleteDomainResponse xmlns='http://sdb.amazonaws.com/doc/2007-02-09/'>
-#        <ResponseStatus>
-#          <StatusCode>Success</StatusCode>
-#          <RequestID>08836cbe-3f7a-4f61-bd16-bc7bd5ef6578</RequestID>
-#          <BoxUsage/>
-#        </ResponseStatus>
-#      </DeleteDomainResponse>
-#      """
-#    )
-#    http = mock("Net:HTTP")
-#    http.stub!(:send_request).and_return(resp)
-##    Net::HTTP.stub!(:new).and_return(http)
-#    
-#    lambda { @service.delete_domain(@domain) }.should_not raise_error
-#  end
-#end
-#
+    result = nil
+    lambda { result = @service.list_domains }.should_not raise_error    
+    result.should_not be_nil 
+    result.should_not be_empty
+    result.has_key?(:domains).should == true
+    result[:domains].should_not be_nil
+    result[:domains].include?(@domain).should == true
+  end
+end
+
+
+describe Service, "when listing existing domains" do
+  before(:all) do
+    # ENV.stub!(:[]).with('AMAZON_ACCESS_KEY_ID').and_return("X")
+    # ENV.stub!(:[]).with('AMAZON_SECRET_ACCESS_KEY').and_return("X")
+
+    @service = Service.new
+    @domain = "test-#{UUID.random_create.to_s}"
+    @service.create_domain(@domain)
+  end
+  
+  def stub_success
+    resp = mock(Net::HTTPResponse)
+    resp.stub!(:code).and_return("200")
+    resp.stub!(:body).and_return(
+      """
+      <DeleteDomainResponse>
+        <ResponseStatus>
+           <StatusCode>Success</StatusCode>
+           <RequestID>#{UUID.random_create.to_s}</RequestID>
+           <BoxUsage/>
+        </ResponseStatus>
+      </DeleteDomainResponse>
+      """
+    )
+    http = mock(Net::HTTP)
+    http.stub!(:send_request).and_return(resp)
+    Net::HTTP.stub!(:new).and_return(http)
+  end
+
+  it "should be able to delete an existing domain" do
+    stub_success
+    lambda { @service.delete_domain(@domain) }.should_not raise_error
+  end
+   
+  it "should not raise an stub_error trying to delete a non-existing domain" do
+    stub_success
+    lambda { @service.delete_domain(UUID.random_create.to_s) }.should_not raise_error
+  end
+end
+
 #describe Service, "when managing items" do
 #  before(:all) do
 #    @service = Service.new
