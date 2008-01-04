@@ -6,7 +6,8 @@ Spec::Rake::SpecTask.new
 
 gem_spec = Gem::Specification.new do |s|
   s.name = "aws-sdb"
-  s.version = "0.1.0"
+  s.rubyforge_project = s.name
+  s.version = "0.1.1"
   s.platform = Gem::Platform::RUBY
   s.has_rdoc = true
   s.extra_rdoc_files = ["README", "LICENSE"]
@@ -14,10 +15,9 @@ gem_spec = Gem::Specification.new do |s|
   s.description = s.summary
   s.author = "Tim Dysinger"
   s.email = "tim@dysinger.net"
-  s.homepage = "http://dysinger.net"
+  s.homepage = "http://aws-sdb.rubyforge.org"
   s.add_dependency "needle"
   s.require_path = 'lib'
-  s.autorequire = s.name.gsub('-','/')
   s.files = %w(LICENSE README Rakefile) + Dir.glob("{lib,spec}/**/*")
 end
 
