@@ -19,12 +19,12 @@ module AwsSdb
     end
     
     # TODO Make this options hash not a param list
-    def list_domains(max_results = nil, more_token = nil)
+    def list_domains(max = nil, token = nil)
       params = { 'Action' => 'ListDomains' }
       params['MoreToken'] = 
-        more_token unless more_token.nil? || more_token.empty?
+        token unless token.nil? || token.empty?
       params['MaxResults'] = 
-        max_results.to_s unless max_results.nil? || max_results.to_i == 0
+        max.to_s unless max.nil? || max.to_i == 0
       doc = call(:get, params)
       results = []
       REXML::XPath.each(doc, '//DomainName/text()') do |domain| 
@@ -46,23 +46,17 @@ module AwsSdb
       nil
     end  
     
-    def query( 
-        domain_name, 
-        query_expression, 
-        sort = nil,
-        max_results = nil, 
-        more_token = nil 
-      )
+    def query(domain, query, sort = nil, max = nil, token = nil)
       params = { 
         'Action' => 'Query', 
-        'QueryExpression' => query_expression,
-        'DomainName' => domain_name.to_s 
+        'QueryExpression' => query,
+        'DomainName' => domain.to_s 
       }
       params['Sort'] = sort unless sort.nil? || sort.empty?
       params['MoreToken'] = 
-        more_token unless more_token.nil? || more_token.empty?
+        token unless token.nil? || token.empty?
       params['MaxResults'] = 
-        max_results.to_s unless max_results.nil? || max_results.to_i != 0
+        max.to_s unless max.nil? || max.to_i != 0
       doc = call(:get, params)
       results = []
       REXML::XPath.each(doc, '//ItemName/text()') do |item| 
