@@ -21,7 +21,7 @@ module AwsSdb
   class NoSuchDomainError < RequestError ; end
   class NumberDomainsExceededError < RequestError ; end
   class NumberDomainAttributesExceededError < RequestError ; end
-  class NumberDomainBytesExceededError < RequestErrror ; end
+  class NumberDomainBytesExceededError < RequestError ; end
   class NumberItemAttributesExceededError < RequestError ; end
   class RequestTimeoutError < RequestError ; end
   
