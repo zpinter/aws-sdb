@@ -6,7 +6,7 @@ Spec::Rake::SpecTask.new
 
 gem_spec = Gem::Specification.new do |s|
   s.name = "aws-sdb"
-  s.version = "0.0.1"
+  s.version = "0.1.0"
   s.platform = Gem::Platform::RUBY
   s.has_rdoc = true
   s.extra_rdoc_files = ["README", "LICENSE"]
@@ -15,7 +15,7 @@ gem_spec = Gem::Specification.new do |s|
   s.author = "Tim Dysinger"
   s.email = "tim@dysinger.net"
   s.homepage = "http://dysinger.net"
-  # s.add_dependency "uuidtools"
+  s.add_dependency "needle"
   s.require_path = 'lib'
   s.autorequire = s.name.gsub('-','/')
   s.files = %w(LICENSE README Rakefile) + Dir.glob("{lib,spec}/**/*")
