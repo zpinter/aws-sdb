@@ -1,0 +1,12 @@
+Autotest.add_hook :initialize do |at|
+  %w{
+    .autotest 
+    LICENSE 
+    README 
+    Rakefile 
+    script 
+    pkg 
+    nbproject
+  }.each {|e|at.add_exception(e)}
+  at.add_exception(/.*\.log/)
+end
