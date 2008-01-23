@@ -69,14 +69,14 @@ module AwsSdb
       params = { 
         'Action' => 'PutAttributes', 
         'DomainName' => domain.to_s,
-        'ItemName' => item.to_s,
-        'Replace' => replace
+        'ItemName' => item.to_s
       }
       count = 0
       attributes.each do | key, values | 
         ([]<<values).flatten.each do |value|
           params["Attribute.#{count}.Name"] = key.to_s
           params["Attribute.#{count}.Value"] = value.to_s
+          params["Attribute.#{count}.Replace"] = replace
           count += 1
         end
       end
@@ -118,7 +118,7 @@ module AwsSdb
     
     def call(method, params)   
       params.merge!( { 
-          'Version' => '2007-02-09',
+          'Version' => '2007-11-07',
           'SignatureVersion' => '1',
           'AWSAccessKeyId' => @access_key_id,
           'Timestamp' => Time.now.gmtime.iso8601

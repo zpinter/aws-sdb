@@ -25,6 +25,8 @@ module AwsSdb
   class NumberItemAttributesExceededError < RequestError ; end
   class RequestTimeoutError < RequestError ; end
   
+  class FeatureDeprecatedError < RequestError ; end
+  
   class ConnectionError < Error
     attr_reader :response
       

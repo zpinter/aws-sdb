@@ -18,9 +18,8 @@ describe Service, "when creating a new domain" do
     )
     @domain = "test-#{UUID.random_create.to_s}"
     #    domains = @service.list_domains[0]
-    #    @logger.debug("Domains #{domains.inspect}")
     #    domains.each do |d|
-    #      @service.delete_domain(d)
+    #      @service.delete_domain(d) if d =~ /^test/
     #    end
   end
 
@@ -86,49 +85,54 @@ describe Service, "when creating a new domain" do
   
   it "should raise an error if an a nil or '' domain name is given" do
     stub_error(
-      400, :InvalidDomainName, "The domain name '' is not valid."
+      400, 
+      :InvalidParameterValue, 
+      "Value () for parameter DomainName is invalid."
     )
     lambda { 
       @service.create_domain('') 
-    }.should raise_error(InvalidDomainNameError)
+    }.should raise_error(InvalidParameterValueError)
+    lambda { 
+      @service.create_domain(nil)
+    }.should raise_error(InvalidParameterValueError)
     stub_error(
-      400, :InvalidDomainName, "The domain name '     ' is not valid."
+      400, 
+      :InvalidParameterValue, 
+      "Value (     ) for parameter DomainName is invalid."
     )
     lambda { 
       @service.create_domain('     ')
-    }.should raise_error(InvalidDomainNameError)
-    stub_error(
-      400, :InvalidDomainName, "The domain name '' is not valid."
-    )
-    lambda { 
-      @service.create_domain(nil)
-    }.should raise_error(InvalidDomainNameError)
+    }.should raise_error(InvalidParameterValueError)
   end
 
   it "should raise an error if the domain name length is < 3 or > 255" do
     stub_error(
-      400, :InvalidDomainName, "The domain name 'xx' is not valid."
+      400, 
+      :InvalidParameterValue, 
+      "Value (xx) for parameter DomainName is invalid."
     )
     lambda { 
       @service.create_domain('xx')
-    }.should raise_error(InvalidDomainNameError)
+    }.should raise_error(InvalidParameterValueError)
     stub_error(
       400, 
-      :InvalidDomainName, 
-      "The domain name '#{:x.to_s*256}' is not valid."
+      :InvalidParameterValue, 
+      "Value (#{:x.to_s*256}) for parameter DomainName is invalid."
     )
     lambda { 
       @service.create_domain('x'*256)
-    }.should raise_error(InvalidDomainNameError)
+    }.should raise_error(InvalidParameterValueError)
   end
 
   it "should only accept domain names with a-z, A-Z, 0-9, '_', '-', and '.' " do
     stub_error(
-      400, :InvalidDomainName, "The domain name '@$^*()' is not valid."
+      400, 
+      :InvalidParameterValue, 
+      "Value (@$^*()) for parameter DomainName is invalid."
     )
     lambda { 
-      @service.create_domain('@$^&*()')
-    }.should raise_error(InvalidDomainNameError)
+      @service.create_domain('@$^*()')
+    }.should raise_error(InvalidParameterValueError)
   end
 
   it "should only accept a maximum of 100 domain names" do
@@ -148,7 +152,7 @@ describe Service, "when listing domains" do
     )
     @domain = "test-#{UUID.random_create.to_s}"
     #    @service.list_domains[0].each do |d|
-    #      @service.delete_domain(d)
+    #      @service.delete_domain(d) if d =~ /^test/
     #    end
     #    @service.create_domain(@domain)
   end
@@ -162,14 +166,14 @@ describe Service, "when listing domains" do
     resp.stub!(:code).and_return("200")
     resp.stub!(:body).and_return(
       """
-      <ListDomainsResponse>
-        <ResponseStatus>
-          <StatusCode>Success</StatusCode>
-          <RequestID>#{UUID.random_create.to_s}</RequestID>
-          <BoxUsage/>
-        </ResponseStatus>
-        <DomainName>#{@domain}</DomainName>
-      </ListDomainsResponse>
+          <ListDomainsResponse>
+            <ResponseStatus>
+              <StatusCode>Success</StatusCode>
+              <RequestID>#{UUID.random_create.to_s}</RequestID>
+              <BoxUsage/>
+            </ResponseStatus>
+            <DomainName>#{@domain}</DomainName>
+          </ListDomainsResponse>
       """
     )
     http = mock(Net::HTTP)
@@ -194,7 +198,7 @@ describe Service, "when deleting domains" do
     )
     @domain = "test-#{UUID.random_create.to_s}"
     #    @service.list_domains[0].each do |d|
-    #      @service.delete_domain(d)
+    #      @service.delete_domain(d) if d =~ /^test/
     #    end
     #    @service.create_domain(@domain)
   end
@@ -242,10 +246,10 @@ describe Service, "when managing items" do
       ENV['AMAZON_SECRET_ACCESS_KEY']
     )
     @domain = "test-#{UUID.random_create.to_s}"
-#    @service.list_domains[0].each do |d|
-#      @service.delete_domain(d)
-#    end
-#    @service.create_domain(@domain)
+    #    @service.list_domains[0].each do |d|
+    #      @service.delete_domain(d) if d =~ /^test/
+    #    end
+    #    @service.create_domain(@domain)
     @item = "test-#{UUID.random_create.to_s}"
     @attributes = {
       :question => 'What is the answer?',
@@ -254,7 +258,7 @@ describe Service, "when managing items" do
   end
   
   after(:all) do
-#    @service.delete_domain(@domain)
+    #    @service.delete_domain(@domain)
   end
   
   def stub_put
@@ -397,3 +401,10 @@ describe Service, "when managing items" do
     }.should_not raise_error
   end
 end
+
+# TODO Pull the specs from the amazon docs and write more rspec
+# 100 attributes per each call
+# 256 total attribute name-value pairs per item
+# 250 million attributes per domain
+# 10 GB of total user data storage per domain
+# ...etc...
