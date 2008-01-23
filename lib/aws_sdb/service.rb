@@ -18,7 +18,6 @@ module AwsSdb
       @secret_access_key = secret_access_key
     end
     
-    # TODO Make this options hash not a param list
     def list_domains(max = nil, token = nil)
       params = { 'Action' => 'ListDomains' }
       params['MoreToken'] = 
