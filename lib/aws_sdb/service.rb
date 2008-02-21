@@ -20,16 +20,16 @@ module AwsSdb
     
     def list_domains(max = nil, token = nil)
       params = { 'Action' => 'ListDomains' }
-      params['MoreToken'] = 
+      params['NextToken'] = 
         token unless token.nil? || token.empty?
-      params['MaxResults'] = 
+      params['MaxNumberOfDomains'] = 
         max.to_s unless max.nil? || max.to_i == 0
       doc = call(:get, params)
       results = []
       REXML::XPath.each(doc, '//DomainName/text()') do |domain| 
         results << domain.to_s
       end
-      return results, REXML::XPath.each(doc, '/MoreToken/text()').to_s 
+      return results, REXML::XPath.first(doc, '//NextToken/text()').to_s 
     end
         
     def create_domain(domain)
@@ -45,23 +45,22 @@ module AwsSdb
       nil
     end  
     
-    def query(domain, query, sort = nil, max = nil, token = nil)
+    def query(domain, query, max = nil, token = nil)
       params = { 
         'Action' => 'Query', 
         'QueryExpression' => query,
         'DomainName' => domain.to_s 
       }
-      params['Sort'] = sort unless sort.nil? || sort.empty?
-      params['MoreToken'] = 
+      params['NextToken'] = 
         token unless token.nil? || token.empty?
-      params['MaxResults'] = 
-        max.to_s unless max.nil? || max.to_i != 0
+      params['MaxNumberOfItems'] = 
+        max.to_s unless max.nil? || max.to_i == 0
       doc = call(:get, params)
       results = []
       REXML::XPath.each(doc, '//ItemName/text()') do |item| 
         results << item.to_s
       end
-      return results, REXML::XPath.each(doc, '/MoreToken/text()').to_s 
+      return results, REXML::XPath.first(doc, '//NextToken/text()').to_s 
     end
     
     def put_attributes(domain, item, attributes, replace = true)
@@ -136,9 +135,10 @@ module AwsSdb
       query = query.join('&')
       url = "http://sds.amazonaws.com?#{query}"
       uri = URI.parse(url)
+      @logger.debug("#{url}") if @logger
       response = 
         Net::HTTP.new(uri.host, uri.port).send_request(method, url)
-      @logger.debug("#{url} #{response.code} #{response.body}")
+      @logger.debug("#{response.code}\n#{response.body}") if @logger
       raise(ConnectionError.new(response)) unless (200..400).include?(
         response.code.to_i
       )
