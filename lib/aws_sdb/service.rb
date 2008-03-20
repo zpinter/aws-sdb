@@ -12,10 +12,16 @@ require 'rexml/xpath'
 module AwsSdb
     
   class Service
-    def initialize(logger, access_key_id, secret_access_key)
+    def initialize(
+        logger, 
+        access_key_id, 
+        secret_access_key, 
+        url = "http://sds.amazonaws.com"
+      )
       @logger = logger
       @access_key_id = access_key_id 
       @secret_access_key = secret_access_key
+      @base_url = url
     end
     
     def list_domains(max = nil, token = nil)
@@ -133,7 +139,7 @@ module AwsSdb
       signature = Base64.encode64(hmac).strip
       query << "Signature=#{CGI::escape(signature)}"
       query = query.join('&')
-      url = "http://sds.amazonaws.com?#{query}"
+      url = "#{@base_url}?#{query}"
       uri = URI.parse(url)
       @logger.debug("#{url}") if @logger
       response = 
