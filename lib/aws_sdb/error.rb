@@ -1,16 +1,16 @@
 module AwsSdb
 
   class Error < RuntimeError ; end
-  
+
   class RequestError < Error
     attr_reader :request_id
-    
+
     def initialize(message, request_id=nil)
       super(message)
       @request_id = request_id
     end
   end
-    
+
   class InvalidDomainNameError < RequestError ; end
   class InvalidParameterValueError < RequestError ; end
   class InvalidNextTokenError < RequestError ; end
@@ -24,12 +24,12 @@ module AwsSdb
   class NumberDomainBytesExceededError < RequestError ; end
   class NumberItemAttributesExceededError < RequestError ; end
   class RequestTimeoutError < RequestError ; end
-  
+
   class FeatureDeprecatedError < RequestError ; end
-  
+
   class ConnectionError < Error
     attr_reader :response
-      
+
     def initialize(response)
       super(
         "#{response.code} \
@@ -38,5 +38,5 @@ module AwsSdb
       @response = response
     end
   end
-  
+
 end

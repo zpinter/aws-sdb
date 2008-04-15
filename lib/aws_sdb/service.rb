@@ -1,82 +1,76 @@
+require 'logger'
 require 'time'
 require 'cgi'
 require 'uri'
 require 'net/http'
-
 require 'base64'
 require 'openssl'
-
 require 'rexml/document'
 require 'rexml/xpath'
 
 module AwsSdb
-    
+
   class Service
-    def initialize(
-        logger, 
-        access_key_id, 
-        secret_access_key, 
-        url = "http://sds.amazonaws.com"
-      )
-      @logger = logger
-      @access_key_id = access_key_id 
-      @secret_access_key = secret_access_key
-      @base_url = url
+    def initialize(options={})
+      @access_key_id = options[:access_key_id] || ENV['AMAZON_ACCESS_KEY_ID']
+      @secret_access_key = options[:secret_access_key] || ENV['AMAZON_SECRET_ACCESS_KEY'] 
+      @base_url = options[:url] || 'http://sds.amazonaws.com'
+      @logger = options[:logger] || Logger.new("aws_sdb.log")
     end
-    
+
     def list_domains(max = nil, token = nil)
       params = { 'Action' => 'ListDomains' }
-      params['NextToken'] = 
+      params['NextToken'] =
         token unless token.nil? || token.empty?
-      params['MaxNumberOfDomains'] = 
+      params['MaxNumberOfDomains'] =
         max.to_s unless max.nil? || max.to_i == 0
       doc = call(:get, params)
       results = []
-      REXML::XPath.each(doc, '//DomainName/text()') do |domain| 
+      REXML::XPath.each(doc, '//DomainName/text()') do |domain|
         results << domain.to_s
       end
-      return results, REXML::XPath.first(doc, '//NextToken/text()').to_s 
+      return results, REXML::XPath.first(doc, '//NextToken/text()').to_s
     end
-        
+
     def create_domain(domain)
       call(:post, { 'Action' => 'CreateDomain', 'DomainName'=> domain.to_s })
       nil
     end
-  
+
     def delete_domain(domain)
       call(
-        :delete, 
+        :delete,
         { 'Action' => 'DeleteDomain', 'DomainName' => domain.to_s }
       )
       nil
-    end  
-    
+    end
+
     def query(domain, query, max = nil, token = nil)
-      params = { 
-        'Action' => 'Query', 
+      params = {
+        'Action' => 'Query',
         'QueryExpression' => query,
-        'DomainName' => domain.to_s 
+        'DomainName' => domain.to_s
       }
-      params['NextToken'] = 
+      params['NextToken'] =
         token unless token.nil? || token.empty?
-      params['MaxNumberOfItems'] = 
+      params['MaxNumberOfItems'] =
         max.to_s unless max.nil? || max.to_i == 0
       doc = call(:get, params)
       results = []
-      REXML::XPath.each(doc, '//ItemName/text()') do |item| 
+      REXML::XPath.each(doc, '//ItemName/text()') do |item|
         results << item.to_s
       end
-      return results, REXML::XPath.first(doc, '//NextToken/text()').to_s 
+      return results, REXML::XPath.first(doc, '//NextToken/text()').to_s
     end
-    
+
     def put_attributes(domain, item, attributes, replace = true)
-      params = { 
-        'Action' => 'PutAttributes', 
+      params = {
+        'Action' => 'PutAttributes',
         'DomainName' => domain.to_s,
         'ItemName' => item.to_s
       }
       count = 0
-      attributes.each do | key, values | 
+      attributes.each do | key, values |
         ([]<<values).flatten.each do |value|
           params["Attribute.#{count}.Name"] = key.to_s
           params["Attribute.#{count}.Value"] = value.to_s
@@ -87,15 +81,15 @@ module AwsSdb
       call(:put, params)
       nil
     end
-        
+
     def get_attributes(domain, item)
-      doc = call( 
-        :get, 
-        { 
-          'Action' => 'GetAttributes', 
+      doc = call(
+        :get,
+        {
+          'Action' => 'GetAttributes',
           'DomainName' => domain.to_s,
-          'ItemName' => item.to_s 
-        } 
+          'ItemName' => item.to_s
+        }
       )
       attributes = {}
       REXML::XPath.each(doc, "//Attribute") do |attr|
@@ -107,26 +101,26 @@ module AwsSdb
     end
 
     def delete_attributes(domain, item)
-      call( 
-        :delete, 
-        { 
-          'Action' => 'DeleteAttributes', 
+      call(
+        :delete,
+        {
+          'Action' => 'DeleteAttributes',
           'DomainName' => domain.to_s,
-          'ItemName' => item.to_s 
-        } 
+          'ItemName' => item.to_s
+        }
       )
       nil
     end
 
     protected
-    
-    def call(method, params)   
-      params.merge!( { 
+
+    def call(method, params)
+      params.merge!( {
           'Version' => '2007-11-07',
           'SignatureVersion' => '1',
           'AWSAccessKeyId' => @access_key_id,
           'Timestamp' => Time.now.gmtime.iso8601
-        } 
+        }
       )
       data = ''
       query = []
@@ -142,7 +136,7 @@ module AwsSdb
       url = "#{@base_url}?#{query}"
       uri = URI.parse(url)
       @logger.debug("#{url}") if @logger
-      response = 
+      response =
         Net::HTTP.new(uri.host, uri.port).send_request(method, url)
       @logger.debug("#{response.code}\n#{response.body}") if @logger
       raise(ConnectionError.new(response)) unless (200..400).include?(
@@ -156,7 +150,7 @@ module AwsSdb
         ).new(
           error.get_elements('Message')[0].text,
           doc.get_elements('*/RequestID')[0].text
-        ) 
+        )
       ) unless error.nil?
       doc
     end

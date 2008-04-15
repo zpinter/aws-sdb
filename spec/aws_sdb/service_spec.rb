@@ -11,11 +11,7 @@ include AwsSdb
 
 describe Service, "when creating a new domain" do
   before(:all) do
-    @logger = AwsSdb.container.logs.get(:rspec)
-    @service = AwsSdb.container.service(
-      ENV['AMAZON_ACCESS_KEY_ID'],
-      ENV['AMAZON_SECRET_ACCESS_KEY']
-    )
+    @service = AwsSdb::Service.new
     @domain = "test-#{UUID.random_create.to_s}"
     #    domains = @service.list_domains[0]
     #    domains.each do |d|
@@ -66,14 +62,14 @@ describe Service, "when creating a new domain" do
     http.stub!(:send_request).and_return(resp)
     Net::HTTP.stub!(:new).and_return(http)
   end
-  
+
   it "should not raise an error if a valid new domain name is given" do
     stub_success
     lambda {
       @service.create_domain("test-#{UUID.random_create.to_s}")
     }.should_not raise_error
   end
-  
+
   it "should not raise an error if the domain name already exists" do
     stub_success
     domain = "test-#{UUID.random_create.to_s}"
@@ -82,55 +78,55 @@ describe Service, "when creating a new domain" do
       @service.create_domain(domain)
     }.should_not raise_error
   end
-  
+
   it "should raise an error if an a nil or '' domain name is given" do
     stub_error(
-      400, 
-      :InvalidParameterValue, 
+      400,
+      :InvalidParameterValue,
       "Value () for parameter DomainName is invalid."
     )
-    lambda { 
-      @service.create_domain('') 
+    lambda {
+      @service.create_domain('')
     }.should raise_error(InvalidParameterValueError)
-    lambda { 
+    lambda {
       @service.create_domain(nil)
     }.should raise_error(InvalidParameterValueError)
     stub_error(
-      400, 
-      :InvalidParameterValue, 
+      400,
+      :InvalidParameterValue,
       "Value (     ) for parameter DomainName is invalid."
     )
-    lambda { 
+    lambda {
       @service.create_domain('     ')
     }.should raise_error(InvalidParameterValueError)
   end
 
   it "should raise an error if the domain name length is < 3 or > 255" do
     stub_error(
-      400, 
-      :InvalidParameterValue, 
+      400,
+      :InvalidParameterValue,
       "Value (xx) for parameter DomainName is invalid."
     )
-    lambda { 
+    lambda {
       @service.create_domain('xx')
     }.should raise_error(InvalidParameterValueError)
     stub_error(
-      400, 
-      :InvalidParameterValue, 
+      400,
+      :InvalidParameterValue,
       "Value (#{:x.to_s*256}) for parameter DomainName is invalid."
     )
-    lambda { 
+    lambda {
       @service.create_domain('x'*256)
     }.should raise_error(InvalidParameterValueError)
   end
 
   it "should only accept domain names with a-z, A-Z, 0-9, '_', '-', and '.' " do
     stub_error(
-      400, 
-      :InvalidParameterValue, 
+      400,
+      :InvalidParameterValue,
       "Value (@$^*()) for parameter DomainName is invalid."
     )
-    lambda { 
+    lambda {
       @service.create_domain('@$^*()')
     }.should raise_error(InvalidParameterValueError)
   end
@@ -146,10 +142,7 @@ end
 
 describe Service, "when listing domains" do
   before(:all) do
-    @service = AwsSdb.container.service(
-      ENV['AMAZON_ACCESS_KEY_ID'],
-      ENV['AMAZON_SECRET_ACCESS_KEY']
-    )
+    @service = AwsSdb::Service.new
     @domain = "test-#{UUID.random_create.to_s}"
     #    @service.list_domains[0].each do |d|
     #      @service.delete_domain(d) if d =~ /^test/
@@ -179,10 +172,10 @@ describe Service, "when listing domains" do
     http = mock(Net::HTTP)
     http.stub!(:send_request).and_return(resp)
     Net::HTTP.stub!(:new).and_return(http)
-    
+
     result = nil
-    lambda { result = @service.list_domains[0] }.should_not raise_error    
-    result.should_not be_nil 
+    lambda { result = @service.list_domains[0] }.should_not raise_error
+    result.should_not be_nil
     result.should_not be_empty
     result.size.should == 1
     result.should_not be_nil
@@ -192,21 +185,18 @@ end
 
 describe Service, "when deleting domains" do
   before(:all) do
-    @service = AwsSdb.container.service(
-      ENV['AMAZON_ACCESS_KEY_ID'],
-      ENV['AMAZON_SECRET_ACCESS_KEY']
-    )
+    @service = AwsSdb::Service.new
     @domain = "test-#{UUID.random_create.to_s}"
     #    @service.list_domains[0].each do |d|
     #      @service.delete_domain(d) if d =~ /^test/
     #    end
     #    @service.create_domain(@domain)
   end
-  
+
   after do
     #    @service.delete_domain(@domain)
   end
-  
+
   def stub_success
     resp = mock(Net::HTTPResponse)
     resp.stub!(:code).and_return("200")
@@ -230,21 +220,18 @@ describe Service, "when deleting domains" do
     stub_success
     lambda { @service.delete_domain(@domain) }.should_not raise_error
   end
-   
+
   it "should not raise an error trying to delete a non-existing domain" do
     stub_success
-    lambda { 
-      @service.delete_domain(UUID.random_create.to_s) 
+    lambda {
+      @service.delete_domain(UUID.random_create.to_s)
     }.should_not raise_error
   end
 end
 
 describe Service, "when managing items" do
   before(:all) do
-    @service = AwsSdb.container.service(
-      ENV['AMAZON_ACCESS_KEY_ID'],
-      ENV['AMAZON_SECRET_ACCESS_KEY']
-    )
+    @service = AwsSdb::Service.new
     @domain = "test-#{UUID.random_create.to_s}"
     #    @service.list_domains[0].each do |d|
     #      @service.delete_domain(d) if d =~ /^test/
@@ -256,11 +243,11 @@ describe Service, "when managing items" do
       :answer => [ true, 'testing123', 4.2, 42, 420 ]
     }
   end
-  
+
   after(:all) do
     #    @service.delete_domain(@domain)
   end
-  
+
   def stub_put
     resp = mock(Net::HTTPResponse)
     resp.stub!(:code).and_return("200")
@@ -276,9 +263,9 @@ describe Service, "when managing items" do
     )
     http = mock(Net::HTTP)
     http.stub!(:send_request).and_return(resp)
-    Net::HTTP.stub!(:new).and_return(http)    
+    Net::HTTP.stub!(:new).and_return(http)
   end
-  
+
   def stub_get
     resp = mock(Net::HTTPResponse)
     resp.stub!(:code).and_return("200")
@@ -319,9 +306,9 @@ describe Service, "when managing items" do
     )
     http = mock(Net::HTTP)
     http.stub!(:send_request).and_return(resp)
-    Net::HTTP.stub!(:new).and_return(http)    
+    Net::HTTP.stub!(:new).and_return(http)
   end
-  
+
   def stub_query
     resp = mock(Net::HTTPResponse)
     resp.stub!(:code).and_return("200")
@@ -341,7 +328,7 @@ describe Service, "when managing items" do
     http.stub!(:send_request).and_return(resp)
     Net::HTTP.stub!(:new).and_return(http)
   end
-  
+
   def stub_delete
     resp = mock(Net::HTTPResponse)
     resp.stub!(:code).and_return("200")
@@ -360,7 +347,7 @@ describe Service, "when managing items" do
     http.stub!(:send_request).and_return(resp)
     Net::HTTP.stub!(:new).and_return(http)
   end
-  
+
   it "should be able to put attributes" do
     stub_put
     lambda {
@@ -368,7 +355,7 @@ describe Service, "when managing items" do
     }.should_not raise_error
   end
 
-  it "should be able to get attributes" do 
+  it "should be able to get attributes" do
     stub_get
     result = nil
     lambda {
