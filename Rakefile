@@ -7,7 +7,7 @@ Spec::Rake::SpecTask.new
 gem_spec = Gem::Specification.new do |s|
   s.name = "aws-sdb"
   s.rubyforge_project = s.name
-  s.version = "0.2.0"
+  s.version = "0.3.0"
   s.platform = Gem::Platform::RUBY
   s.has_rdoc = true
   s.extra_rdoc_files = ["README", "LICENSE"]
@@ -16,9 +16,14 @@ gem_spec = Gem::Specification.new do |s|
   s.author = "Tim Dysinger"
   s.email = "tim@dysinger.net"
   s.homepage = "http://aws-sdb.rubyforge.org"
-  s.add_dependency "needle"
+  s.add_dependency "uuidtools"
   s.require_path = 'lib'
   s.files = %w(LICENSE README Rakefile) + Dir.glob("{lib,spec}/**/*")
+end
+
+desc "Open an irb session preloaded with this library"
+task :console do
+  sh "irb -rubygems -I lib -r aws_sdb.rb"
 end
 
 Rake::GemPackageTask.new(gem_spec) do |pkg|
