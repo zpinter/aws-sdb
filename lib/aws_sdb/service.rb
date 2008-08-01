@@ -137,7 +137,7 @@ module AwsSdb
       uri = URI.parse(url)
       @logger.debug("#{url}") if @logger
       response =
-        Net::HTTP.new(uri.host, uri.port).send_request(method, url)
+        Net::HTTP.new(uri.host, uri.port).send_request(method, uri.request_uri)
       @logger.debug("#{response.code}\n#{response.body}") if @logger
       raise(ConnectionError.new(response)) unless (200..400).include?(
         response.code.to_i
