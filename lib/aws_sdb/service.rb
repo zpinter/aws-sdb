@@ -45,6 +45,20 @@ module AwsSdb
       nil
     end
 
+    def query_with_attributes(domain, query, max = nil, token = nil)
+      params = {
+        'Action' => 'QueryWithAttributes',
+        'QueryExpression' => query,
+        'DomainName' => domain.to_s
+      }
+      params['NextToken'] =
+        token unless token.nil? || token.empty?
+      params['MaxNumberOfItems'] =
+        max.to_s unless max.nil? || max.to_i == 0
+
+      query_call(params)
+    end
+
     def query(domain, query, max = nil, token = nil)
       params = {
         'Action' => 'Query',
@@ -55,6 +69,10 @@ module AwsSdb
         token unless token.nil? || token.empty?
       params['MaxNumberOfItems'] =
         max.to_s unless max.nil? || max.to_i == 0
+
+      query_call(params)
+    end
+    def query_call(params)
       doc = call(:get, params)
       results = []
       REXML::XPath.each(doc, '//ItemName/text()') do |item|
@@ -62,7 +80,6 @@ module AwsSdb
       end
       return results, REXML::XPath.first(doc, '//NextToken/text()').to_s
     end
-
     def put_attributes(domain, item, attributes, replace = true)
       params = {
         'Action' => 'PutAttributes',
