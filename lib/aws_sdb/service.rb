@@ -44,7 +44,7 @@ module AwsSdb
       )
       nil
     end
-
+    # <QueryWithAttributesResult><Item><Name>in-c2ffrw</Name><Attribute><Name>code</Name><Value>in-c2ffrw</Value></Attribute><Attribute><Name>date_created</Name><Value>2008-10-31</Value></Attribute></Item><Item>
     def query_with_attributes(domain, query, max = nil, token = nil)
       params = {
         'Action' => 'QueryWithAttributes',
@@ -55,10 +55,25 @@ module AwsSdb
         token unless token.nil? || token.empty?
       params['MaxNumberOfItems'] =
         max.to_s unless max.nil? || max.to_i == 0
-
-      query_call(params)
+      
+      doc = call(:get, params)
+      results = []
+      REXML::XPath.each(doc, "//Item") do |item|
+        name = REXML::XPath.first(item, './Name/text()').to_s
+        
+        
+        attributes = {'Name' => name}
+        REXML::XPath.each(item, "./Attribute") do |attr|
+          key = REXML::XPath.first(attr, './Name/text()').to_s
+          value = REXML::XPath.first(attr, './Value/text()').to_s
+          ( attributes[key] ||= [] ) << value
+        end
+        results << attributes
+      end
+      return results, REXML::XPath.first(doc, '//NextToken/text()').to_s
     end
-
+    
+    # <QueryResult><ItemName>in-c2ffrw</ItemName><ItemName>in-72yagt</ItemName><ItemName>in-52j8gj</ItemName>
     def query(domain, query, max = nil, token = nil)
       params = {
         'Action' => 'Query',
@@ -69,17 +84,17 @@ module AwsSdb
         token unless token.nil? || token.empty?
       params['MaxNumberOfItems'] =
         max.to_s unless max.nil? || max.to_i == 0
-
-      query_call(params)
-    end
-    def query_call(params)
+      
+      
       doc = call(:get, params)
       results = []
       REXML::XPath.each(doc, '//ItemName/text()') do |item|
         results << item.to_s
       end
       return results, REXML::XPath.first(doc, '//NextToken/text()').to_s
+        
     end
+    
     def put_attributes(domain, item, attributes, replace = true)
       params = {
         'Action' => 'PutAttributes',
