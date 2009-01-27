@@ -55,13 +55,13 @@ module AwsSdb
         token unless token.nil? || token.empty?
       params['MaxNumberOfItems'] =
         max.to_s unless max.nil? || max.to_i == 0
-      
+
       doc = call(:get, params)
       results = []
       REXML::XPath.each(doc, "//Item") do |item|
         name = REXML::XPath.first(item, './Name/text()').to_s
-        
-        
+
+
         attributes = {'Name' => name}
         REXML::XPath.each(item, "./Attribute") do |attr|
           key = REXML::XPath.first(attr, './Name/text()').to_s
@@ -72,7 +72,7 @@ module AwsSdb
       end
       return results, REXML::XPath.first(doc, '//NextToken/text()').to_s
     end
-    
+
     # <QueryResult><ItemName>in-c2ffrw</ItemName><ItemName>in-72yagt</ItemName><ItemName>in-52j8gj</ItemName>
     def query(domain, query, max = nil, token = nil)
       params = {
@@ -84,17 +84,17 @@ module AwsSdb
         token unless token.nil? || token.empty?
       params['MaxNumberOfItems'] =
         max.to_s unless max.nil? || max.to_i == 0
-      
-      
+
+
       doc = call(:get, params)
       results = []
       REXML::XPath.each(doc, '//ItemName/text()') do |item|
         results << item.to_s
       end
       return results, REXML::XPath.first(doc, '//NextToken/text()').to_s
-        
+
     end
-    
+
     def put_attributes(domain, item, attributes, replace = true)
       params = {
         'Action' => 'PutAttributes',
