@@ -64,13 +64,9 @@ describe Service, "when creating a new domain" do
     }.should raise_error(InvalidParameterValueError)
   end
 
-  it "should only accept a maximum of 100 domain names" do
-    # TODO Implement this example
-  end
+  it "should only accept a maximum of 100 domain names"
 
-  it "should not have to call amazon to determine domain name correctness" do
-    # TODO Implement this example
-  end
+  it "should not have to call amazon to determine domain name correctness"
 end
 
 describe Service, "when listing domains" do
@@ -169,6 +165,8 @@ describe Service, "when managing items" do
     result.should_not be_nil
     result.include?(@item).should == true
   end
+
+  it "should be able to query with attributes"
 
   it "should be able to delete attributes" do
     lambda {
