@@ -103,7 +103,7 @@ module AwsSdb
       }
       count = 0
       attributes.each do | key, values |
-        ([]<<values).flatten.each do |value|
+        ([] << values).flatten.each do |value|
           params["Attribute.#{count}.Name"] = key.to_s
           params["Attribute.#{count}.Value"] = value.to_s
           params["Attribute.#{count}.Replace"] = replace
@@ -132,16 +132,22 @@ module AwsSdb
       attributes
     end
 
-    def delete_attributes(domain, item)
-      call(
-        :delete,
-        {
-          'Action' => 'DeleteAttributes',
-          'DomainName' => domain.to_s,
-          'ItemName' => item.to_s
-        }
-      )
-      nil
+    def delete_attributes(domain, item, attributes={})
+      params = {
+        'Action' => 'DeleteAttributes',
+        'DomainName' => domain.to_s,
+        'ItemName' => item.to_s
+      }
+      count = 0
+      attributes.each do | key, values |
+        ([] << values).flatten.each do |value|
+          params["Attribute.#{count}.Name"] = key.to_s
+          params["Attribute.#{count}.Value"] = value.to_s
+          count += 1
+        end
+      end
+      call(:delete, params)
+      nil      
     end
 
     protected
